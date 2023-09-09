@@ -26,7 +26,6 @@ var clients = make(map[*websocket.Conn]*client)
 var register = make(chan *websocket.Conn)
 var broadcast = make(chan string)
 var unregister = make(chan *websocket.Conn)
-var messages = make(map[string][]chatMessage)
 
 func HandleIndex(c *fiber.Ctx) error {
 	sess, err := store.Get(c)
