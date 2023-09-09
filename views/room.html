@@ -1,0 +1,13 @@
+<h1>Room - {{ .room }}</h1>
+
+{{template "partials/messages" . }}
+
+<div hx-ext="ws" ws-connect="/ws/{{.room}}">
+  <div id="chat_room"></div>
+
+  <form id="form" ws-send>
+    <input type="hidden" name="room" value="{{.room}}" />
+    <input name="message" id="message" />
+    <button type="submit">Send</button>
+  </form>
+</div>

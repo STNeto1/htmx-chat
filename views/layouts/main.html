@@ -11,9 +11,20 @@
       integrity="sha384-zUfuhFKKZCbHTY6aRR46gxiqszMk5tcHjsVFxnUo8VMus4kHGVdIYVbOYYNlKmHV"
       crossorigin="anonymous"
     ></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
   </head>
 
   <body>
     {{embed}}
   </body>
+
+  <script>
+    htmx.on("htmx:wsAfterMessage", function (evt) {
+      const chat_room = document.getElementById("chat_room");
+      chat_room.scrollTop = chat_room.scrollHeight;
+
+      const msg_input = document.getElementById("message");
+      msg_input.value = "";
+    });
+  </script>
 </html>

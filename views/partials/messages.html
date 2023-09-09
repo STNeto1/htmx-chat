@@ -1,0 +1,10 @@
+<!-- id="chat_messages" matches the element to be swapped by the ws message -->
+<div id="chat_messages" hx-swap-oob="true">
+  <ul>
+    {{ range $key := .messages}}
+    <li>
+      <span>{{$key}}</span>
+    </li>
+    {{ end }}
+  </ul>
+</div>
