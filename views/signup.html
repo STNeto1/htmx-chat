@@ -1,0 +1,15 @@
+<section id="content">
+
+<h1>Signup</h1>
+
+{{if .error}}
+<div><span>{{.error}}<span></div>
+{{end}}
+
+
+<form hx-post="/signup" method="post" hx-target="#content">
+    <input name="name" id="name" />
+    <button type="submit">Send</button>
+</form>
+
+</section>

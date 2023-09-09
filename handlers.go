@@ -28,6 +28,17 @@ func HandleIndex(c *fiber.Ctx) error {
 		rooms["test"] = make(map[*websocket.Conn]*client)
 	}
 
+	sess, err := store.Get(c)
+	if err != nil {
+		return c.Render("signup", fiber.Map{
+			"error": "Error getting session",
+		}, "layouts/main")
+	}
+
+	if sess.Get("user") == nil {
+		return c.Render("signup", fiber.Map{}, "layouts/main")
+	}
+
 	keys := make([]string, 0, len(rooms))
 	for k := range rooms {
 		keys = append(keys, k)
@@ -51,6 +62,53 @@ func HandleRoom(c *fiber.Ctx) error {
 		"room":     room,
 		"messages": roomMessages,
 	}, "layouts/main")
+}
+
+type SignupPayload struct {
+	Name string `form:"name"`
+}
+
+func HandleSignup(c *fiber.Ctx) error {
+	sess, err := store.Get(c)
+	if err != nil {
+		return c.Render("signup", fiber.Map{
+			"error": "Error getting session",
+		}, "layouts/main")
+	}
+
+	var body SignupPayload
+	if err := c.BodyParser(&body); err != nil {
+		return c.Render("signup", fiber.Map{
+			"error": "Error parsing form",
+		})
+	}
+
+	if body.Name == "" {
+		return c.Render("signup", fiber.Map{
+			"error": "Name is required",
+		})
+	}
+
+	sess.Set("user", body.Name)
+	if err := sess.Save(); err != nil {
+		return c.Render("signup", fiber.Map{
+			"error": "Error storing data",
+		})
+	}
+
+	return c.Redirect("/")
+}
+
+func HandleSignout(c *fiber.Ctx) error {
+	sess, _ := store.Get(c)
+
+	if err := sess.Destroy(); err != nil {
+		return c.Render("error", fiber.Map{
+			"error": "Error storing data",
+		})
+	}
+
+	return c.Redirect("/")
 }
 
 type MessagePayload struct {

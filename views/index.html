@@ -1,1 +1,15 @@
-<section id="content">{{template "partials/rooms" .}}</section>
+<section id="content">
+  <h1>Rooms</h1>
+
+  <form hx-post="/signout" method="post" hx-target="#content">
+    <button type="submit">Signout</button>
+  </form>
+
+  <ul>
+    {{ range $key := .rooms }}
+    <li>
+      <a href="/room/{{ $key }}">{{ $key }}</a>
+    </li>
+    {{ end }}
+  </ul>
+</section>
