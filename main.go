@@ -29,10 +29,11 @@ func main() {
 
 	app.Get("/room/:room", HandleRoom)
 	app.Post("/room", HandleCreateRoom)
-	app.Get("/ws/:room", websocket.New(HandleMessage))
 
 	app.Post("/signup", HandleSignup)
 	app.Post("/signout", HandleSignout)
+
+	app.Use(HandleWsMiddleware).Get("/ws/:room", websocket.New(HandleMessage, websocket.Config{}))
 
 	go RunHub()
 

@@ -1,9 +1,9 @@
 <!-- id="chat_messages" matches the element to be swapped by the ws message -->
 <div id="chat_messages" hx-swap-oob="true">
   <ul>
-    {{ range $key := .messages}}
+    {{ range $msg := .messages}}
     <li>
-      <span>{{$key}}</span>
+      <span>{{.User}} - {{.Message}}</span>
     </li>
     {{ end }}
   </ul>

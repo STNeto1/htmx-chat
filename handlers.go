@@ -16,12 +16,17 @@ type client struct {
 	mu        sync.Mutex
 }
 
+type chatMessage struct {
+	User    string
+	Message string
+}
+
 var rooms = make(map[string]map[*websocket.Conn]*client)
 var clients = make(map[*websocket.Conn]*client)
 var register = make(chan *websocket.Conn)
 var broadcast = make(chan string)
 var unregister = make(chan *websocket.Conn)
-var messages = make(map[string][]string)
+var messages = make(map[string][]chatMessage)
 
 func HandleIndex(c *fiber.Ctx) error {
 	if len(rooms) == 0 {
@@ -142,6 +147,18 @@ func HandleSignout(c *fiber.Ctx) error {
 	return c.Redirect("/")
 }
 
+func HandleWsMiddleware(c *fiber.Ctx) error {
+	sess, _ := store.Get(c)
+
+	if sess.Get("user") == nil {
+		c.Response().Header.Set("HX-Redirect", "/")
+		return c.Render("404", fiber.Map{}, "layouts/main")
+	}
+
+	c.Locals("user", sess.Get("user"))
+	return c.Next()
+}
+
 type MessagePayload struct {
 	Room    string `json:"room"`
 	Message string `json:"message"`
@@ -178,7 +195,10 @@ func HandleMessage(c *websocket.Conn) {
 			}
 
 			// Store the Message
-			messages[msg.Room] = append(messages[msg.Room], msg.Message)
+			messages[msg.Room] = append(messages[msg.Room], chatMessage{
+				Message: msg.Message,
+				User:    c.Locals("user").(string),
+			})
 
 			tmpl, err := template.ParseFiles("./views/partials/messages.html")
 			if err != nil {
