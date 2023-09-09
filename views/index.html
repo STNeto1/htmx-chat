@@ -6,7 +6,7 @@
   <ul>
     {{ range $key := .rooms }}
     <li>
-      <a href="/room/{{ $key }}">{{ $key }}</a>
+      <a href="/room/{{ .Name }}">{{ .Name }}</a>
     </li>
     {{ end }}
   </ul>

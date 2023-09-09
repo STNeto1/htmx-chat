@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"html/template"
 	"log"
+	"net/url"
 	"sync"
 
 	"github.com/gofiber/contrib/websocket"
@@ -21,7 +22,6 @@ type chatMessage struct {
 	Message string
 }
 
-var rooms = make(map[string]map[*websocket.Conn]*client)
 var clients = make(map[*websocket.Conn]*client)
 var register = make(chan *websocket.Conn)
 var broadcast = make(chan string)
@@ -29,10 +29,6 @@ var unregister = make(chan *websocket.Conn)
 var messages = make(map[string][]chatMessage)
 
 func HandleIndex(c *fiber.Ctx) error {
-	if len(rooms) == 0 {
-		rooms["test"] = make(map[*websocket.Conn]*client)
-	}
-
 	sess, err := store.Get(c)
 	if err != nil {
 		return c.Render("signup", fiber.Map{
@@ -44,29 +40,39 @@ func HandleIndex(c *fiber.Ctx) error {
 		return c.Render("signup", fiber.Map{}, "layouts/main")
 	}
 
-	keys := make([]string, 0, len(rooms))
-	for k := range rooms {
-		keys = append(keys, k)
+	rooms, err := GetRooms()
+	if err != nil {
+		return c.Render("signup", fiber.Map{
+			"error": err.Error(),
+		}, "layouts/main")
 	}
 
 	return c.Render("index", fiber.Map{
-		"rooms": keys,
+		"rooms": rooms,
 	}, "layouts/main")
 }
 
 func HandleRoom(c *fiber.Ctx) error {
 	room := c.Params("room")
 
-	if _, ok := rooms[room]; !ok {
-		c.Response().Header.Set("HX-Redirect", "/")
+	decodedValue, err := url.QueryUnescape(room)
+	if err != nil {
 		return c.Render("404", fiber.Map{}, "layouts/main")
 	}
 
-	roomMessages := messages[room]
+	dbRoom, err := GetRoom(decodedValue)
+	if err != nil {
+		return c.Render("404", fiber.Map{}, "layouts/main")
+	}
+
+	msgs, err := GetRoomMessages(dbRoom.ID)
+	if err != nil {
+		return c.Render("404", fiber.Map{}, "layouts/main")
+	}
 
 	return c.Render("room", fiber.Map{
-		"room":     room,
-		"messages": roomMessages,
+		"room":     dbRoom.Name,
+		"messages": msgs,
 	}, "layouts/main")
 }
 
@@ -88,13 +94,11 @@ func HandleCreateRoom(c *fiber.Ctx) error {
 		})
 	}
 
-	if _, ok := rooms[body.Name]; ok {
+	if err := CreateRoom(body.Name); err != nil {
 		return c.Render("partials/room-form", fiber.Map{
-			"error": "Room already exists",
+			"error": err.Error(),
 		})
 	}
-
-	rooms[body.Name] = make(map[*websocket.Conn]*client)
 
 	c.Response().Header.Set("HX-Redirect", "/room/"+body.Name)
 	return c.SendString("")
@@ -195,10 +199,11 @@ func HandleMessage(c *websocket.Conn) {
 			}
 
 			// Store the Message
-			messages[msg.Room] = append(messages[msg.Room], chatMessage{
-				Message: msg.Message,
-				User:    c.Locals("user").(string),
-			})
+			dbMsg, err := CreateMessage(c.Locals("user").(string), msg.Message, msg.Room)
+			if err != nil {
+				log.Println("error creating message:", err)
+				continue
+			}
 
 			tmpl, err := template.ParseFiles("./views/partials/messages.html")
 			if err != nil {
@@ -206,7 +211,11 @@ func HandleMessage(c *websocket.Conn) {
 				continue
 			}
 
-			roomMessages := messages[msg.Room]
+			roomMessages, err := GetRoomMessages(dbMsg.RoomID)
+			if err != nil {
+				log.Println("error getting room messages:", err)
+				roomMessages = []Message{}
+			}
 
 			var resultHtml bytes.Buffer
 			err = tmpl.Execute(&resultHtml, fiber.Map{
@@ -226,7 +235,6 @@ func RunHub() {
 		select {
 		case connection := <-register:
 			clients[connection] = &client{}
-			log.Println("connection registered")
 
 		case message := <-broadcast:
 			// Send the message to all clients
@@ -253,8 +261,6 @@ func RunHub() {
 		case connection := <-unregister:
 			// Remove the client from the hub
 			delete(clients, connection)
-
-			log.Println("connection unregistered")
 		}
 	}
 }
