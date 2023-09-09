@@ -53,7 +53,8 @@ func HandleRoom(c *fiber.Ctx) error {
 	room := c.Params("room")
 
 	if _, ok := rooms[room]; !ok {
-		rooms[room] = make(map[*websocket.Conn]*client)
+		c.Response().Header.Set("HX-Redirect", "/")
+		return c.Render("404", fiber.Map{}, "layouts/main")
 	}
 
 	roomMessages := messages[room]
