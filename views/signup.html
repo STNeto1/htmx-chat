@@ -7,7 +7,7 @@
 {{end}}
 
 
-<form hx-post="/signup" method="post" hx-target="#content">
+<form hx-post="/signup" method="post" hx-target="#content" hx-swap="outerHTML">
     <input name="name" id="name" />
     <button type="submit">Send</button>
 </form>
