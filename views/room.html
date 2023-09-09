@@ -1,6 +1,8 @@
 <section id="content">
   <h1>Room - {{ .room }}</h1>
 
+  <a href="/">Back</a>
+
   {{template "partials/messages" . }}
 
   <div hx-ext="ws" ws-connect="/ws/{{.room}}">

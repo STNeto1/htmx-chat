@@ -64,6 +64,36 @@ func HandleRoom(c *fiber.Ctx) error {
 	}, "layouts/main")
 }
 
+type CreateRoomPayload struct {
+	Name string `form:"name"`
+}
+
+func HandleCreateRoom(c *fiber.Ctx) error {
+	var body CreateRoomPayload
+	if err := c.BodyParser(&body); err != nil {
+		return c.Render("partials/room-form", fiber.Map{
+			"error": "Error parsing form",
+		})
+	}
+
+	if body.Name == "" {
+		return c.Render("partials/room-form", fiber.Map{
+			"error": "Name is required",
+		})
+	}
+
+	if _, ok := rooms[body.Name]; ok {
+		return c.Render("partials/room-form", fiber.Map{
+			"error": "Room already exists",
+		})
+	}
+
+	rooms[body.Name] = make(map[*websocket.Conn]*client)
+
+	c.Response().Header.Set("HX-Redirect", "/room/"+body.Name)
+	return c.SendString("")
+}
+
 type SignupPayload struct {
 	Name string `form:"name"`
 }

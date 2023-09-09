@@ -5,6 +5,8 @@
     <button type="submit">Signout</button>
   </form>
 
+  {{template "partials/room-form" .}}
+
   <ul>
     {{ range $key := .rooms }}
     <li>

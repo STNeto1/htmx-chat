@@ -1,0 +1,11 @@
+<div id="room-form">
+{{if .error}}
+<div><span>{{.error}}<span></div>
+{{end}}
+
+<form hx-post="/room" method="post" hx-target="#room-form">
+    <label>Room name</label>
+    <input name="name" id="name" />
+    <button type="submit">Send</button>
+  </form>
+</div>

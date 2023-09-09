@@ -26,7 +26,9 @@ func main() {
 	app.Use(logger.New())
 
 	app.Get("/", HandleIndex)
+
 	app.Get("/room/:room", HandleRoom)
+	app.Post("/room", HandleCreateRoom)
 	app.Get("/ws/:room", websocket.New(HandleMessage))
 
 	app.Post("/signup", HandleSignup)
